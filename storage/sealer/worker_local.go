@@ -790,6 +790,13 @@ func (l *LocalWorker) memInfo() (memPhysical, memUsed, memSwap, memSwapUsed uint
 }
 
 func (l *LocalWorker) Info(context.Context) (storiface.WorkerInfo, error) {
+	hostname, err := os.Hostname() // TODO: allow overriding from config
+	if err != nil {
+		panic(err)
+	}
+	if env, ok := os.LookupEnv("WORKER_NAME"); ok {
+		hostname = hostname + "-" + env
+	}
 	gpus, err := ffi.GetGPUDevices()
 	if err != nil {
 		log.Errorf("getting gpu devices failed: %+v", err)

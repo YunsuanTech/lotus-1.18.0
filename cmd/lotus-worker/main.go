@@ -70,6 +70,12 @@ func main() {
 		Version:              build.UserVersion(),
 		EnableBashCompletion: true,
 		Flags: []cli.Flag{
+			//add by roger
+			&cli.StringFlag{
+				Name:  "workername",
+				Usage: "worker name will display on jobs list",
+				Value: "",
+			},
 			&cli.StringFlag{
 				Name:    FlagWorkerRepo,
 				Aliases: []string{FlagWorkerRepoDeprecation},
@@ -285,7 +291,10 @@ var runCmd = &cli.Command{
 	},
 	Action: func(cctx *cli.Context) error {
 		log.Info("Starting lotus worker")
-
+		// add by roger
+		if cctx.String("workername") != "" {
+			os.Setenv("WORKER_NAME", cctx.String("workername"))
+		}
 		if !cctx.Bool("enable-gpu-proving") {
 			if err := os.Setenv("BELLMAN_NO_GPU", "true"); err != nil {
 				return xerrors.Errorf("could not set no-gpu env: %+v", err)

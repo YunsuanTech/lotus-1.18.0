@@ -771,6 +771,8 @@ type StorageMinerStruct struct {
 
 		MarketSetRetrievalAsk func(p0 context.Context, p1 *retrievalmarket.Ask) error `perm:"admin"`
 
+		MaybeAddPice func(p0 context.Context, p1 storiface.SectorFileType, p2 abi.SectorSize, p3 storiface.PathType) bool `perm:"admin"`
+
 		MiningBase func(p0 context.Context) (*types.TipSet, error) `perm:"read"`
 
 		PiecesGetCIDInfo func(p0 context.Context, p1 cid.Cid) (*piecestore.CIDInfo, error) `perm:"read"`
@@ -4284,6 +4286,11 @@ func (s *StorageMinerStruct) DealsConsiderOnlineRetrievalDeals(p0 context.Contex
 
 func (s *StorageMinerStub) DealsConsiderOnlineRetrievalDeals(p0 context.Context) (bool, error) {
 	return false, ErrNotSupported
+}
+
+//add by roger
+func (s *StorageMinerStruct) MaybeAddPice(p0 context.Context, p1 storiface.SectorFileType, p2 abi.SectorSize, p3 storiface.PathType) bool {
+	return s.Internal.MaybeAddPice(p0, p1, p2, p3)
 }
 
 func (s *StorageMinerStruct) DealsConsiderOnlineStorageDeals(p0 context.Context) (bool, error) {

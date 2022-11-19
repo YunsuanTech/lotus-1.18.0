@@ -34,6 +34,9 @@ type SectorIndex interface { // part of storage-miner api
 	StorageInfo(context.Context, storiface.ID) (storiface.StorageInfo, error)
 	StorageReportHealth(context.Context, storiface.ID, storiface.HealthReport) error
 
+	//add by roger
+	MaybeAddPice(ctx context.Context, allocate storiface.SectorFileType, ssize abi.SectorSize, pathType storiface.PathType) bool
+
 	StorageDeclareSector(ctx context.Context, storageID storiface.ID, s abi.SectorID, ft storiface.SectorFileType, primary bool) error
 	StorageDropSector(ctx context.Context, storageID storiface.ID, s abi.SectorID, ft storiface.SectorFileType) error
 	StorageFindSector(ctx context.Context, sector abi.SectorID, ft storiface.SectorFileType, ssize abi.SectorSize, allowFetch bool) ([]storiface.SectorStorageInfo, error)
@@ -653,6 +656,46 @@ func (i *Index) FindSector(id abi.SectorID, typ storiface.SectorFileType) ([]sto
 	}
 
 	return out, nil
+}
+
+//add by roger
+func (i *Index) MaybeAddPice(ctx context.Context, allocate storiface.SectorFileType, ssize abi.SectorSize, pathType storiface.PathType) bool {
+	i.lk.RLock()
+	defer i.lk.RUnlock()
+
+	isAddPice := false
+
+	spaceReq, err := allocate.SealSpaceUse(ssize)
+	if err != nil {
+		log.Debugf("allocating space compute failer")
+		return false
+	}
+
+	for _, p := range i.stores {
+		if (pathType == storiface.PathSealing) && !p.info.CanSeal {
+			continue
+		}
+
+		if (spaceReq * 10) > uint64(p.fsi.Available) {
+			log.Debugf("not allocating on %s, out of space (available: %d, need: %d)", p.info.ID, p.fsi.Available, spaceReq)
+			continue
+		}
+
+		if time.Since(p.lastHeartbeat) > SkippedHeartbeatThresh {
+			log.Debugf("not allocating on %s, didn't receive heartbeats for %s", p.info.ID, time.Since(p.lastHeartbeat))
+			continue
+		}
+
+		if p.heartbeatErr != nil {
+			log.Debugf("not allocating on %s, heartbeat error: %s", p.info.ID, p.heartbeatErr)
+			continue
+		}
+
+		isAddPice = true
+		break
+	}
+
+	return isAddPice
 }
 
 var _ SectorIndex = &Index{}

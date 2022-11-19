@@ -57,6 +57,13 @@ func (s *allocSelector) Ok(ctx context.Context, task sealtasks.TaskType, spt abi
 
 	requested := s.alloc
 
+	//add by roger
+	if task == sealtasks.TTAddPiece {
+		if isAddPice := s.index.MaybeAddPice(ctx, s.alloc, ssize, s.ptype); !isAddPice {
+			return false, false, xerrors.Errorf("disk space issue")
+		}
+	}
+
 	for _, info := range best {
 		if _, ok := have[info.ID]; ok {
 			requested = requested.SubAllowed(info.AllowTypes, info.DenyTypes)
